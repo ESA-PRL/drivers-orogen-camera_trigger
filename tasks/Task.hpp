@@ -1,5 +1,3 @@
-/* Generated from orogen/lib/orogen/templates/tasks/Task.hpp */
-
 #ifndef CAMERA_TRIGGER_TASK_TASK_HPP
 #define CAMERA_TRIGGER_TASK_TASK_HPP
 
@@ -110,4 +108,3 @@ tasks/Task.cpp, and will be put in the camera_trigger namespace.
 }
 
 #endif
-

@@ -1,5 +1,3 @@
-/* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
-
 #include "Task.hpp"
 
 using namespace camera_trigger;
@@ -17,12 +15,6 @@ Task::Task(std::string const& name, RTT::ExecutionEngine* engine)
 Task::~Task()
 {
 }
-
-
-
-/// The following lines are template definitions for the various state machine
-// hooks defined by Orocos::RTT. See Task.hpp for more detailed
-// documentation about them.
 
 bool Task::configureHook()
 {
