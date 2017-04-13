@@ -1,20 +1,48 @@
 name "camera_trigger"
 
+using_library "velodyne_lidar"
+using_library "telemetry_telecommand"
+
 import_types_from "camera_triggerTypes.hpp"
 import_types_from "base"
+
+import_types_from "velodyne_lidar/MultilevelLaserScan.h"
+import_types_from "velodyne_lidar/gps_rmc_type.h"
+import_types_from "telemetry_telecommand/Messages.hpp"
+
+#import_types_from "TOFScanTypes.hpp"
+#import_typse_from "tofcamera_mesasr/SwissRangerTypes.hpp"
 
 task_context "Task" do
     needs_configuration
 
-    input_port('trigger', 'bool').
-        doc 'if there is a sample here with value TRUE, frames from the input port pass through'
+    input_port('telecommand_in', 'telemetry_telecommand/messages/Telecommand').
+        doc 'Telecommand input'
 
-    input_port('frame_in', ro_ptr('base::samples::frame::Frame')).
-        doc 'Input frame from a camera'
+    input_port('frame_left_in', ro_ptr('base::samples::frame::Frame')).
+        doc 'Input frame from the left or only camera'
+    input_port('frame_right_in', ro_ptr('base::samples::frame::Frame')).
+        doc 'Input frame from the right camera'
+    input_port('laser_scan_in', "velodyne_lidar::MultilevelLaserScan").
+        doc 'Input frame from velodyne lidar'
+    input_port('distance_frame_in', ro_ptr('base::samples::frame::Frame')).
+        doc 'Input frame from LiDAR or ToF'
+    input_port('pointcloud_in', 'base::samples::Pointcloud').
+        doc 'Input from ToF'
 
     output_port('frame_out', ro_ptr('base::samples::frame::Frame')).
-        doc 'Output frame when triggered'
+        doc 'Output frame from the left or only camera'
+    output_port('laser_scan_out', "velodyne_lidar::MultilevelLaserScan").
+        doc 'Output frame from velodyne lidar'
+    output_port('distance_frame_out', ro_ptr('base::samples::frame::Frame')).
+        doc 'Output frame from LiDAR or ToF'
+    output_port('pointcloud_out', 'base::samples::Pointcloud').
+        doc 'Output from ToF'
 
-    port_driven "trigger"
+    output_port('telemetry_out', 'telemetry_telecommand/messages/Telemetry').
+        doc 'Output port for telemetry'
+    output_port('telecommand_out', 'telemetry_telecommand/messages/Telecommand').
+        doc 'Output port for telecommands for further processing in other components. Write to this port last.'
+
+    port_driven "telecommand_in"
 end
-

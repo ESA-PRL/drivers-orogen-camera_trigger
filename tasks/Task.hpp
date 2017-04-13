@@ -2,6 +2,7 @@
 #define CAMERA_TRIGGER_TASK_TASK_HPP
 
 #include "camera_trigger/TaskBase.hpp"
+#include <telemetry_telecommand/Messages.hpp>
 
 namespace camera_trigger {
 
@@ -26,6 +27,7 @@ tasks/Task.cpp, and will be put in the camera_trigger namespace.
     {
 	friend class TaskBase;
     protected:
+        telemetry_telecommand::messages::Producer connectedSensor;
 
 
 

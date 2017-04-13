@@ -1,18 +1,11 @@
 <package>
-  <description brief="This component serves as a gate which only passes images when the trigger port is having data">
-  Trigger port must get data with TRUE value
+  <description brief="This component serves as a gate which passes images to TMTC and images + data to processing components">
+      This component receives telecommands from the TM/TC component and outputs (possibly periodically) image frames to TM/TC or frames and additional data to processing components for more complex data products, such as DEMs.
   </description>
-  <author>Moritz Schilling/moritz.schilling@esa.int</author>
+  <author>Levin Gerdes/levin.gerdes@esa.int</author>
   <license></license>
   <url>http://</url>
   <logo>http://</logo>
   <depend package="base/cmake" />
-  <!--
-   To add any dependencies use the depend tag
-  <depend package="dummy-dependency-0" />
-	...
-  <depend package="dummy-dependency-n-1" />
-  <depend package="dummy-dependency-n" />
-  -->
-  <depend package="base/cmake" />
+  <depend package="drivers/velodyne_lidar" />
 </package>
