@@ -44,5 +44,5 @@ task_context "Task" do
     output_port('telecommand_out', 'telemetry_telecommand/messages/Telecommand').
         doc 'Output port for telecommands for further processing in other components. Write to this port last.'
 
-    port_driven "telecommand_in"
+    port_driven "telecommand_in", "frame_left_in"
 end

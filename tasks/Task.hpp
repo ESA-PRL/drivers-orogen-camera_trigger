@@ -5,6 +5,12 @@
 #include <telemetry_telecommand/Messages.hpp>
 
 namespace camera_trigger {
+    enum connectedSensor
+    {
+        CAMERA,
+        LIDAR,
+        TOF
+    };
 
     /*! \class Task 
      * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
@@ -27,9 +33,11 @@ tasks/Task.cpp, and will be put in the camera_trigger namespace.
     {
 	friend class TaskBase;
     protected:
-        telemetry_telecommand::messages::Producer connectedSensor;
-
-
+        connectedSensor sensor;
+        telemetry_telecommand::messages::Telecommand command;
+        base::Time lastTime;
+        std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode> productModes;
+        std::map<telemetry_telecommand::messages::ProductType, base::Time> productTimes;
 
     public:
         /** TaskContext constructor for Task

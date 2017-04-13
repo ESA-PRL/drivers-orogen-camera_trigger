@@ -44,22 +44,17 @@ bool Task::configureHook()
     if (_frame_left_in.connected() && _frame_right_in.connected())
     {
         // stereo pair
-        connectedSensor = telemetry_telecommand::messages::MAST;
+        sensor = CAMERA;
     }
     else if (_frame_left_in.connected() && _distance_frame_in.connected() && _laser_scan_in.connected())
     {
         // lidar
-        connectedSensor = telemetry_telecommand::messages::LIDAR;
+        sensor = LIDAR;
     }
     else if (_frame_left_in.connected() && _distance_frame_in.connected() && _pointcloud_in.connected())
     {
         // tof
-        connectedSensor = telemetry_telecommand::messages::TOF;
-    }
-    else if (_frame_left_in.connected())
-    {
-        // bb2/3
-        connectedSensor = telemetry_telecommand::messages::FRONT; //TODO could also be rear. adjust messages.h?
+        sensor = TOF;
     }
     else
     {
@@ -80,18 +75,54 @@ void Task::updateHook()
 {
     TaskBase::updateHook();
 
+    // measure how much time has elapsed
+    // (this way the trigger's periodicity can be changed)
+    base::Time curTime = base::Time::now();
+    int64_t elapsedTime = curTime.toMicroseconds() - lastTime.toMicroseconds();
+    lastTime = curTime;
+
     RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame;
 
-    // Check triggering condition (New sample & value TRUE)
-    //if ((_trigger.read(triggerValue) == RTT::NewData) && (triggerValue == true))
-    //{
-    //    // We got triggered, but we have to check if there is ANY sample at all (not necessarily a new one though) :)
-    //    // Pass frame from input to output
-    //    if (_frame_in.read(frame))
-    //    {
-    //        _frame_out.write(frame);
-    //    }
-    //}
+    if (_telecommand_in.read(command) == RTT::NewData)
+    {
+        // take note of newly set mode for productType
+        productModes[command.productType] = command.productMode;
+        // setting a new mode resets the timer for the chosen productType
+        productTimes[command.productType] = curTime;
+    }
+
+    // check if any product needs to be produced/forwarded
+    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode>::iterator it_type;
+    for (it_type it = productModes.begin(); it != productModes.end(); it++)
+    {
+        telemetry_telecommand::messages::ProductType type = it->first;
+        telemetry_telecommand::messages::Mode mode = it->second;
+
+        if (mode == telemetry_telecommand::messages::ONE_SHOT)
+        {
+            //TODO output/forward
+
+            // just for completeness, not needed
+            productTimes[type] = curTime;
+        }
+        else if (mode < telemetry_telecommand::messages::STOP)
+        {
+            if (elapsedTime >= command.usecPeriod) //TODO fix comp. between uint and int
+            {
+                //TODO output/forward
+
+                productTimes[type] = curTime;
+            }
+        }
+        else if (mode == telemetry_telecommand::messages::STOP)
+        {
+            // no action required
+        }
+        else
+        {
+            //TODO output error message
+        }
+    }
 }
 void Task::errorHook()
 {
