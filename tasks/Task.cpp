@@ -22,7 +22,7 @@ bool Task::configureHook()
         return false;
 
     // something went wrong
-    if (!( _telecommand_in.connected() && _telemetry_out.connected()))
+    if (!( _telecommand_in.connected() && _telecommands_out.connected()))
     {
         return false;
     }
@@ -43,17 +43,14 @@ bool Task::configureHook()
     // determine which type of sensor the trigger is connected to
     if (_frame_left_in.connected() && _frame_right_in.connected())
     {
-        // stereo pair
         sensor = CAMERA;
     }
     else if (_frame_left_in.connected() && _distance_frame_in.connected() && _laser_scan_in.connected())
     {
-        // lidar
         sensor = LIDAR;
     }
     else if (_frame_left_in.connected() && _distance_frame_in.connected() && _pointcloud_in.connected())
     {
-        // tof
         sensor = TOF;
     }
     else
@@ -76,21 +73,34 @@ void Task::updateHook()
     TaskBase::updateHook();
 
     // measure how much time has elapsed
-    // (this way the trigger's periodicity can be changed)
     base::Time curTime = base::Time::now();
-    int64_t elapsedTime = curTime.toMicroseconds() - lastTime.toMicroseconds();
-    lastTime = curTime;
 
     RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame;
 
+    // read telecommand
+    telemetry_telecommand::messages::Mode lastMode;
     if (_telecommand_in.read(command) == RTT::NewData)
     {
+        // Remember old mode in case a single shot should be taken.
+        // In case the product type never had a mode until now, set (last) mode to default STOP
+        if (productModes.count(command.productType) == 0)
+        {
+            productModes[command.productType] = telemetry_telecommand::messages::STOP;
+        }
+        lastMode = productModes[command.productType];
+
         // take note of newly set mode for productType
         productModes[command.productType] = command.productMode;
         // setting a new mode resets the timer for the chosen productType
         productTimes[command.productType] = curTime;
+
+        if (command.productMode == telemetry_telecommand::messages::PERIODIC)
+        {
+            productPeriods[command.productType] = command.usecPeriod;
+        }
     }
 
+    bool sendAnything = false;
     // check if any product needs to be produced/forwarded
     typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode>::iterator it_type;
     for (it_type it = productModes.begin(); it != productModes.end(); it++)
@@ -98,19 +108,32 @@ void Task::updateHook()
         telemetry_telecommand::messages::ProductType type = it->first;
         telemetry_telecommand::messages::Mode mode = it->second;
 
+        // Populate commandsMap (the map with which we build the command vector to be sent to DEM/Stereo/...
+        // The following components do not care about the periodicity; only this trigger has to take care of it
+        // Unless the current type is in one shot or the period is reached (NOT just if the mode is periodic),
+        // leave it at stop (don't process type at next component)
+        commandsMap[type].productType = type;
+        commandsMap[type].productMode = telemetry_telecommand::messages::STOP;
+
         if (mode == telemetry_telecommand::messages::ONE_SHOT)
         {
-            //TODO output/forward
+            sendAnything = true;
+            commandsMap[type].productMode = mode;
 
-            // just for completeness, not needed
-            productTimes[type] = curTime;
+            // reset mode to last one before One Shot.
+            it->second = lastMode;
         }
-        else if (mode < telemetry_telecommand::messages::STOP)
+        else if (mode == telemetry_telecommand::messages::PERIODIC)
         {
-            if (elapsedTime >= command.usecPeriod) //TODO fix comp. between uint and int
-            {
-                //TODO output/forward
+            // how much time has elapsed since the last time this product was forwarded
+            int64_t elapsedTime = curTime.toMicroseconds() - productTimes[type].toMicroseconds();
 
+            // check if type needs to be forwarded due to periodicity
+            if (elapsedTime >= int64_t(productPeriods[type]))
+            {
+                sendAnything = true;
+                commandsMap[type].productMode = mode;
+                // update time at which product was last sent
                 productTimes[type] = curTime;
             }
         }
@@ -122,6 +145,10 @@ void Task::updateHook()
         {
             //TODO output error message
         }
+    }
+    if (sendAnything)
+    {
+        forwardToPorts();
     }
 }
 void Task::errorHook()
@@ -136,16 +163,59 @@ void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
 }
+void Task::forwardToPorts()
+{
+    switch (sensor)
+    {
+    case CAMERA:
+        {
+            while (_frame_left_in.read(frameLeft) != RTT::NewData);
+            _frame_out.write(frameLeft);
 
-// _telecommand_in
-// _frame_left_in
-// _frame_right_in
-// _laser_scan_in
-// _distance_frame_in
-// _pointcloud_in
-// _frame_out
-// _laser_scan_out
-// _distance_frame_out
-// _pointcloud_out
-// _telemetry_out
-// _telecommand_out
+            while (_frame_left_in.read(frameRight) != RTT::NewData);
+            _frame_right_out.write(frameRight);
+
+            break;
+        }
+    case LIDAR:
+        {
+            while (_frame_left_in.read(frame) != RTT::NewData);
+            _frame_out.write(frame);
+
+            while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
+            _distance_frame_out.write(distanceFrame);
+
+            while (_laser_scan_in.read(laserScans) != RTT::NewData);
+            _laser_scan_out.write(laserScans);
+
+            break;
+        }
+    case TOF:
+        {
+            while (_frame_left_in.read(frame) != RTT::NewData);
+            _frame_out.write(frame);
+
+            while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
+            _distance_frame_out.write(distanceFrame);
+
+            while (_pointcloud_in.read(pointcloud) != RTT::NewData);
+            _pointcloud_out.write(pointcloud);
+
+            break;
+        }
+    default:
+        {
+            //TODO error
+            break;
+        }
+    }
+
+    // send telecommands
+    std::vector<telemetry_telecommand::messages::Telecommand> commandVec;
+    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand>::iterator it_type;
+    for (it_type it = commandsMap.begin(); it != commandsMap.end(); it++)
+    {
+        commandVec.push_back( it->second );
+    }
+    _telecommands_out.write(commandVec);
+}

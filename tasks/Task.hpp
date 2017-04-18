@@ -34,10 +34,24 @@ tasks/Task.cpp, and will be put in the camera_trigger namespace.
 	friend class TaskBase;
     protected:
         connectedSensor sensor;
-        telemetry_telecommand::messages::Telecommand command;
+
         base::Time lastTime;
+
+        // variables to read and write contents of ports
+        RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame;
+        RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frameLeft;
+        RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frameRight;
+        RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> distanceFrame;
+        base::samples::Pointcloud pointcloud;
+        velodyne_lidar::MultilevelLaserScan laserScans;
+        telemetry_telecommand::messages::Telecommand command;
+
         std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode> productModes;
         std::map<telemetry_telecommand::messages::ProductType, base::Time> productTimes;
+        std::map<telemetry_telecommand::messages::ProductType, uint64_t> productPeriods;
+        std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand> commandsMap;
+
+        void forwardToPorts();
 
     public:
         /** TaskContext constructor for Task

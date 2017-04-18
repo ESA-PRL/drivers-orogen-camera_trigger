@@ -32,6 +32,8 @@ task_context "Task" do
 
     output_port('frame_out', ro_ptr('base::samples::frame::Frame')).
         doc 'Output frame from the left or only camera'
+    output_port('frame_right_out', ro_ptr('base::samples::frame::Frame')).
+        doc 'Output frame from the right camera'
     output_port('laser_scan_out', "velodyne_lidar::MultilevelLaserScan").
         doc 'Output frame from velodyne lidar'
     output_port('distance_frame_out', ro_ptr('base::samples::frame::Frame')).
@@ -39,10 +41,8 @@ task_context "Task" do
     output_port('pointcloud_out', 'base::samples::Pointcloud').
         doc 'Output from ToF'
 
-    output_port('telemetry_out', 'telemetry_telecommand/messages/Telemetry').
-        doc 'Output port for telemetry'
-    output_port('telecommand_out', 'telemetry_telecommand/messages/Telecommand').
-        doc 'Output port for telecommands for further processing in other components. Write to this port last.'
+    output_port('telecommands_out', 'std::vector<telemetry_telecommand/messages/Telecommand>').
+        doc 'Output port for vector of telecommands'
 
     port_driven "telecommand_in", "frame_left_in"
 end
