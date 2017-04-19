@@ -30,7 +30,7 @@ task_context "Task" do
     input_port('pointcloud_in', 'base::samples::Pointcloud').
         doc 'Input from ToF'
 
-    output_port('frame_out', ro_ptr('base::samples::frame::Frame')).
+    output_port('frame_left_out', ro_ptr('base::samples::frame::Frame')).
         doc 'Output frame from the left or only camera'
     output_port('frame_right_out', ro_ptr('base::samples::frame::Frame')).
         doc 'Output frame from the right camera'

@@ -170,9 +170,9 @@ void Task::forwardToPorts()
     case CAMERA:
         {
             while (_frame_left_in.read(frameLeft) != RTT::NewData);
-            _frame_out.write(frameLeft);
+            _frame_left_out.write(frameLeft);
 
-            while (_frame_left_in.read(frameRight) != RTT::NewData);
+            while (_frame_right_in.read(frameRight) != RTT::NewData);
             _frame_right_out.write(frameRight);
 
             break;
@@ -180,10 +180,10 @@ void Task::forwardToPorts()
     case LIDAR:
         {
             while (_frame_left_in.read(frame) != RTT::NewData);
-            _frame_out.write(frame);
+            _frame_left_out.write(frame);
 
             while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_out.write(distanceFrame);
+            _distance_frame_left_out.write(distanceFrame);
 
             while (_laser_scan_in.read(laserScans) != RTT::NewData);
             _laser_scan_out.write(laserScans);
@@ -193,10 +193,10 @@ void Task::forwardToPorts()
     case TOF:
         {
             while (_frame_left_in.read(frame) != RTT::NewData);
-            _frame_out.write(frame);
+            _frame_left_out.write(frame);
 
             while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_out.write(distanceFrame);
+            _distance_frame_left_out.write(distanceFrame);
 
             while (_pointcloud_in.read(pointcloud) != RTT::NewData);
             _pointcloud_out.write(pointcloud);
@@ -215,7 +215,8 @@ void Task::forwardToPorts()
     typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand>::iterator it_type;
     for (it_type it = commandsMap.begin(); it != commandsMap.end(); it++)
     {
-        commandVec.push_back( it->second );
+        if (it->second.productMode != telemetry_telecommand::messages::STOP)
+            commandVec.push_back( it->second );
     }
     _telecommands_out.write(commandVec);
 }
