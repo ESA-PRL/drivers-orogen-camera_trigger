@@ -72,9 +72,7 @@ void Task::updateHook()
 {
     TaskBase::updateHook();
 
-    // measure how much time has elapsed
     base::Time curTime = base::Time::now();
-
     RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame;
 
     // read telecommand
@@ -128,7 +126,12 @@ void Task::updateHook()
             // how much time has elapsed since the last time this product was forwarded
             int64_t elapsedTime = curTime.toMicroseconds() - productTimes[type].toMicroseconds();
 
-            // check if type needs to be forwarded due to periodicity
+            // CHECK IF TYPE NEEDS TO BE FORWARDED DUE TO PERIODICITY:
+            // The DEM generation always produces all the types we send to it via a telecommand,
+            // and we send everything which is NOT set to STOP.
+            // This is why we only set the current type's mode to periodic (!= STOP) if it has to be sent because of its periodicity.
+            // Thus, when one product type is in CONTINUOUS mode and another one is in PERIODIC but has not completed its period,
+            // only the necessary/desired product (CONTINUOUS) will be produced.
             if (elapsedTime >= int64_t(productPeriods[type]))
             {
                 sendAnything = true;
@@ -137,9 +140,15 @@ void Task::updateHook()
                 productTimes[type] = curTime;
             }
         }
+        else if (mode == telemetry_telecommand::messages::CONTINUOUS)
+        {
+            sendAnything = true;
+            commandsMap[type].productMode = mode;
+        }
         else if (mode == telemetry_telecommand::messages::STOP)
         {
-            // no action required
+            // no action required:
+            // sendAnything stays unchanged, current product type's mode stays STOP
         }
         else
         {
@@ -183,7 +192,7 @@ void Task::forwardToPorts()
             _frame_left_out.write(frame);
 
             while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_left_out.write(distanceFrame);
+            _distance_frame_out.write(distanceFrame);
 
             while (_laser_scan_in.read(laserScans) != RTT::NewData);
             _laser_scan_out.write(laserScans);
@@ -196,7 +205,7 @@ void Task::forwardToPorts()
             _frame_left_out.write(frame);
 
             while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_left_out.write(distanceFrame);
+            _distance_frame_out.write(distanceFrame);
 
             while (_pointcloud_in.read(pointcloud) != RTT::NewData);
             _pointcloud_out.write(pointcloud);
