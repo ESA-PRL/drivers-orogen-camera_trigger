@@ -24,6 +24,7 @@ bool Task::configureHook()
     // something went wrong
     if (!( _telecommand_in.connected() && _telecommands_out.connected()))
     {
+        std::cout << "Telecommand in/out connection missing\n";
         return false;
     }
 
@@ -45,17 +46,18 @@ bool Task::configureHook()
     {
         sensor = CAMERA;
     }
-    else if (_frame_left_in.connected() && _distance_frame_in.connected() && _laser_scan_in.connected())
+    else if (_frame_left_in.connected() && _laser_scan_in.connected())
     {
         sensor = LIDAR;
     }
-    else if (_frame_left_in.connected() && _distance_frame_in.connected() && _pointcloud_in.connected())
+    else if (_frame_left_in.connected() && _pointcloud_in.connected())
     {
         sensor = TOF;
     }
     else
     {
         // could not derive which sensor this trigger is connected to
+        std::cout << "Could not derive which sensor this trigger is connected to\n";
         return false;
     }
 
