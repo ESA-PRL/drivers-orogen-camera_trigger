@@ -19,7 +19,10 @@ Task::~Task()
 bool Task::configureHook()
 {
     if (! TaskBase::configureHook())
+    {
+        std::cout << "Parent configureHook failed\n";
         return false;
+    }
 
     // something went wrong
     if (!( _telecommand_in.connected() && _telecommands_out.connected()))
@@ -176,6 +179,22 @@ void Task::cleanupHook()
 }
 void Task::forwardToPorts()
 {
+    bool onlyFrameRequested = true;
+    // prepare telecommands and check which products are required
+    std::vector<telemetry_telecommand::messages::Telecommand> commandVec;
+    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand>::iterator it_type;
+    for (it_type it = commandsMap.begin(); it != commandsMap.end(); it++)
+    {
+        if (it->second.productMode != telemetry_telecommand::messages::STOP)
+        {
+            if (it->second.productType != telemetry_telecommand::messages::IMAGE)
+            {
+                onlyFrameRequested = false;
+            }
+            commandVec.push_back( it->second );
+        }
+    }
+
     switch (sensor)
     {
     case CAMERA:
@@ -183,8 +202,12 @@ void Task::forwardToPorts()
             while (_frame_left_in.read(frameLeft) != RTT::NewData);
             _frame_left_out.write(frameLeft);
 
-            while (_frame_right_in.read(frameRight) != RTT::NewData);
-            _frame_right_out.write(frameRight);
+            // check if only frame will be sent
+            if (!onlyFrameRequested)
+            {
+                while (_frame_right_in.read(frameRight) != RTT::NewData);
+                _frame_right_out.write(frameRight);
+            }
 
             break;
         }
@@ -219,15 +242,6 @@ void Task::forwardToPorts()
             //TODO error
             break;
         }
-    }
-
-    // send telecommands
-    std::vector<telemetry_telecommand::messages::Telecommand> commandVec;
-    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand>::iterator it_type;
-    for (it_type it = commandsMap.begin(); it != commandsMap.end(); it++)
-    {
-        if (it->second.productMode != telemetry_telecommand::messages::STOP)
-            commandVec.push_back( it->second );
     }
     _telecommands_out.write(commandVec);
 }
