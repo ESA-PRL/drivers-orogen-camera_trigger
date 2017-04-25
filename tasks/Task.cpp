@@ -101,6 +101,8 @@ void Task::updateHook()
         {
             productPeriods[command.productType] = command.usecPeriod;
         }
+		std::cout << "Went through new telecommand\n";
+
     }
 
     bool sendAnything = false;
@@ -120,6 +122,7 @@ void Task::updateHook()
 
         if (mode == telemetry_telecommand::messages::ONE_SHOT)
         {
+		std::cout << "Went through one_shot if\n";
             sendAnything = true;
             commandsMap[type].productMode = mode;
 
@@ -194,20 +197,37 @@ void Task::forwardToPorts()
             commandVec.push_back( it->second );
         }
     }
+		std::cout << "Went through forward to ports if\n";
 
     switch (sensor)
     {
     case CAMERA:
         {
-            while (_frame_left_in.read(frameLeft) != RTT::NewData);
-            _frame_left_out.write(frameLeft);
-
+	    bool validPair = false;
             // check if only frame will be sent
-            if (!onlyFrameRequested)
+	    if(onlyFrameRequested)
             {
-                while (_frame_right_in.read(frameRight) != RTT::NewData);
-                _frame_right_out.write(frameRight);
+		while (_frame_left_in.read(frameLeft) != RTT::NewData);
+                _frame_left_out.write(frameLeft);
             }
+            else
+            {
+            	while (_frame_left_in.read(frameLeft) != RTT::NewData);
+                while (_frame_right_in.read(frameRight) != RTT::NewData);
+		while(!validPair)
+		{
+			if(abs(frameLeft->time.toMicroseconds() - frameRight->time.toMicroseconds()) < 1000) // time difference less 1ms
+	        		validPair = true;
+			else if(frameLeft->time > frameRight->time) // frame right in the past
+				while (_frame_right_in.read(frameRight) != RTT::NewData);
+			else if(frameLeft->time < frameRight->time) // frame left in the past
+				while (_frame_left_in.read(frameLeft) != RTT::NewData);
+		}
+		_frame_right_out.write(frameRight);
+                _frame_left_out.write(frameLeft);
+            }
+
+		std::cout << "Went through forwarding of camera if" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
 
             break;
         }
@@ -216,8 +236,8 @@ void Task::forwardToPorts()
             while (_frame_left_in.read(frame) != RTT::NewData);
             _frame_left_out.write(frame);
 
-            while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_out.write(distanceFrame);
+            //while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
+            //_distance_frame_out.write(distanceFrame);
 
             while (_laser_scan_in.read(laserScans) != RTT::NewData);
             _laser_scan_out.write(laserScans);
@@ -229,8 +249,8 @@ void Task::forwardToPorts()
             while (_frame_left_in.read(frame) != RTT::NewData);
             _frame_left_out.write(frame);
 
-            while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
-            _distance_frame_out.write(distanceFrame);
+            //while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
+            //_distance_frame_out.write(distanceFrame);
 
             while (_pointcloud_in.read(pointcloud) != RTT::NewData);
             _pointcloud_out.write(pointcloud);
