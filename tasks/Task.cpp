@@ -209,6 +209,8 @@ void Task::forwardToPorts()
             {
 		while (_frame_left_in.read(frameLeft) != RTT::NewData);
                 _frame_left_out.write(frameLeft);
+		std::cout << "Went through forwarding of camera single " << frameLeft->time << " " <<  onlyFrameRequested << "\n";
+
             }
             else
             {
@@ -219,15 +221,24 @@ void Task::forwardToPorts()
 			if(abs(frameLeft->time.toMicroseconds() - frameRight->time.toMicroseconds()) < 1000) // time difference less 1ms
 	        		validPair = true;
 			else if(frameLeft->time > frameRight->time) // frame right in the past
+			{
+		std::cout << "Went through older right" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
 				while (_frame_right_in.read(frameRight) != RTT::NewData);
+			}
 			else if(frameLeft->time < frameRight->time) // frame left in the past
+			{
+			std::cout << "Went through older left" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
 				while (_frame_left_in.read(frameLeft) != RTT::NewData);
+
+			}
+		std::cout << "Went through forwarding of camera stereo " << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
+
+
 		}
 		_frame_right_out.write(frameRight);
                 _frame_left_out.write(frameLeft);
             }
 
-		std::cout << "Went through forwarding of camera if" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
 
             break;
         }
