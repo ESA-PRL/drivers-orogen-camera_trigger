@@ -84,22 +84,41 @@ void Task::updateHook()
     telemetry_telecommand::messages::Mode lastMode;
     if (_telecommand_in.read(command) == RTT::NewData)
     {
-        // Remember old mode in case a single shot should be taken.
-        // In case the product type never had a mode until now, set (last) mode to default STOP
-        if (productModes.count(command.productType) == 0)
+        // do we need to STOP requesting ALL products?
+        if (command.productType == telemetry_telecommand::messages::ALL && command.productMode == telemetry_telecommand::messages::STOP)
         {
-            productModes[command.productType] = telemetry_telecommand::messages::STOP;
+            // set mode of all products to STOP
+            typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode>::iterator it_type;
+            for (it_type it = productModes.begin(); it != productModes.end(); it++)
+            {
+                productModes[ it->first ] = telemetry_telecommand::messages::STOP;
+            }
         }
-        lastMode = productModes[command.productType];
-
-        // take note of newly set mode for productType
-        productModes[command.productType] = command.productMode;
-        // setting a new mode resets the timer for the chosen productType
-        productTimes[command.productType] = curTime;
-
-        if (command.productMode == telemetry_telecommand::messages::PERIODIC)
+        // command is not supported
+        else if (command.productType == telemetry_telecommand::messages::ALL)
         {
-            productPeriods[command.productType] = command.usecPeriod;
+            std::cout << "WARNING: This command combination (type==ALL, mode!=STOP) is currently not supported. Ignoring command.\n";
+        }
+        // product type is an actual type, not ALL
+        else
+        {
+            // Remember old mode in case a single shot should be taken.
+            // In case the product type never had a mode until now, set (last) mode to default STOP
+            if (productModes.count(command.productType) == 0)
+            {
+                productModes[command.productType] = telemetry_telecommand::messages::STOP;
+            }
+            lastMode = productModes[command.productType];
+
+            // take note of newly set mode for productType
+            productModes[command.productType] = command.productMode;
+            // setting a new mode resets the timer for the chosen productType
+            productTimes[command.productType] = curTime;
+
+            if (command.productMode == telemetry_telecommand::messages::PERIODIC)
+            {
+                productPeriods[command.productType] = command.usecPeriod;
+            }
         }
 		std::cout << "Went through new telecommand\n";
     }
