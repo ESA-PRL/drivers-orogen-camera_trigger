@@ -14,7 +14,7 @@ namespace camera_trigger {
 
     class Task : public TaskBase
     {
-	friend class TaskBase;
+    friend class TaskBase;
     protected:
         connectedSensor sensor;
 

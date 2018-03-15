@@ -66,6 +66,7 @@ bool Task::configureHook()
 
     return true;
 }
+
 bool Task::startHook()
 {
     if (! TaskBase::startHook())
@@ -88,10 +89,9 @@ void Task::updateHook()
         if (command.productType == telemetry_telecommand::messages::ALL && command.productMode == telemetry_telecommand::messages::STOP)
         {
             // set mode of all products to STOP
-            typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode>::iterator it_type;
-            for (it_type it = productModes.begin(); it != productModes.end(); it++)
+            for (auto const& it : productModes)
             {
-                productModes[ it->first ] = telemetry_telecommand::messages::STOP;
+                productModes[ it.first ] = telemetry_telecommand::messages::STOP;
             }
         }
         // command is not supported
@@ -120,16 +120,15 @@ void Task::updateHook()
                 productPeriods[command.productType] = command.usecPeriod;
             }
         }
-		std::cout << "Went through new telecommand\n";
+        std::cout << "Went through new telecommand\n";
     }
 
     bool sendAnything = false;
     // check if any product needs to be produced/forwarded
-    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Mode>::iterator it_type;
-    for (it_type it = productModes.begin(); it != productModes.end(); it++)
+    for (auto& it : productModes)
     {
-        telemetry_telecommand::messages::ProductType type = it->first;
-        telemetry_telecommand::messages::Mode mode = it->second;
+        telemetry_telecommand::messages::ProductType type = it.first;
+        telemetry_telecommand::messages::Mode mode = it.second;
 
         // Populate commandsMap (the map with which we build the command vector to be sent to DEM/Stereo/...
         // The following components do not care about the periodicity; only this trigger has to take care of it
@@ -145,7 +144,7 @@ void Task::updateHook()
             commandsMap[type].productMode = mode;
 
             // reset mode to last one before One Shot.
-            it->second = lastMode;
+            it.second = lastMode;
         }
         else if (mode == telemetry_telecommand::messages::PERIODIC)
         {
@@ -203,16 +202,15 @@ void Task::forwardToPorts()
     bool onlyFrameRequested = true;
     // prepare telecommands and check which products are required
     std::vector<telemetry_telecommand::messages::Telecommand> commandVec;
-    typedef std::map<telemetry_telecommand::messages::ProductType, telemetry_telecommand::messages::Telecommand>::iterator it_type;
-    for (it_type it = commandsMap.begin(); it != commandsMap.end(); it++)
+    for (auto const& it : commandsMap)
     {
-        if (it->second.productMode != telemetry_telecommand::messages::STOP)
+        if (it.second.productMode != telemetry_telecommand::messages::STOP)
         {
-            if (it->second.productType != telemetry_telecommand::messages::IMAGE)
+            if (it.second.productType != telemetry_telecommand::messages::IMAGE)
             {
                 onlyFrameRequested = false;
             }
-            commandVec.push_back( it->second );
+            commandVec.push_back( it.second );
         }
     }
     std::cout << "Went through forward to ports if\n";
