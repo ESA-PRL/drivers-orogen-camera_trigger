@@ -3,6 +3,10 @@
 
 #include "camera_trigger/TaskBase.hpp"
 #include <telemetry_telecommand/Messages.hpp>
+#include <base-logging/Logging.hpp>
+
+#define BASE_LOG_NAMESPACE camera_trigger
+#define BASE_LOG_WARN
 
 namespace camera_trigger {
     enum connectedSensor

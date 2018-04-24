@@ -20,14 +20,14 @@ bool Task::configureHook()
 {
     if (! TaskBase::configureHook())
     {
-        std::cout << "Parent configureHook failed\n";
+        LOG_ERROR_S << "Parent configureHook failed";
         return false;
     }
 
     // something went wrong
     if (!( _telecommand_in.connected() && _telecommands_out.connected()))
     {
-        std::cout << "Telecommand in/out connection missing\n";
+        LOG_ERROR_S << "Telecommand in/out connection missing";
         return false;
     }
 
@@ -60,7 +60,7 @@ bool Task::configureHook()
     else
     {
         // could not derive which sensor this trigger is connected to
-        std::cout << "Could not derive which sensor this trigger is connected to\n";
+        LOG_ERROR_S << "Could not derive which sensor this trigger is connected to\n";
         return false;
     }
 
@@ -97,7 +97,7 @@ void Task::updateHook()
         // command is not supported
         else if (command.productType == telemetry_telecommand::messages::ALL)
         {
-            std::cout << "WARNING: This command combination (type==ALL, mode!=STOP) is currently not supported. Ignoring command.\n";
+            LOG_WARN_S << "This command combination (type==ALL, mode!=STOP) is currently not supported. Ignoring command.";
         }
         // product type is an actual type, not ALL
         else
@@ -120,7 +120,7 @@ void Task::updateHook()
                 productPeriods[command.productType] = command.usecPeriod;
             }
         }
-        std::cout << "Went through new telecommand\n";
+        LOG_DEBUG_S << "Went through new telecommand";
     }
 
     bool sendAnything = false;
@@ -139,7 +139,7 @@ void Task::updateHook()
 
         if (mode == telemetry_telecommand::messages::ONE_SHOT)
         {
-            std::cout << "Went through one_shot if\n";
+            LOG_DEBUG_S << "Went through one_shot if";
             sendAnything = true;
             commandsMap[type].productMode = mode;
 
@@ -213,7 +213,7 @@ void Task::forwardToPorts()
             commandVec.push_back( it.second );
         }
     }
-    std::cout << "Went through forward to ports if\n";
+    LOG_DEBUG_S << "Went through forward to ports if";
 
     switch (sensor)
     {
@@ -225,7 +225,7 @@ void Task::forwardToPorts()
             {
                 while (_frame_left_in.read(frameLeft) != RTT::NewData);
                 _frame_left_out.write(frameLeft);
-                std::cout << "Went through forwarding of camera single " << frameLeft->time << " " <<  onlyFrameRequested << "\n";
+                LOG_DEBUG_S << "Went through forwarding of camera single " << frameLeft->time << " " <<  onlyFrameRequested;
 
             }
             else
@@ -238,16 +238,16 @@ void Task::forwardToPorts()
                         validPair = true;
                     else if(frameLeft->time > frameRight->time) // frame right in the past
                     {
-                        std::cout << "Went through older right" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
+                        LOG_DEBUG_S << "Went through older right" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested;
                         while (_frame_right_in.read(frameRight) != RTT::NewData);
                     }
                     else if(frameLeft->time < frameRight->time) // frame left in the past
                     {
-                        std::cout << "Went through older left" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
+                        LOG_DEBUG_S << "Went through older left" << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested;
                         while (_frame_left_in.read(frameLeft) != RTT::NewData);
 
                     }
-                    std::cout << "Went through forwarding of camera stereo " << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested << "\n";
+                    LOG_DEBUG_S << "Went through forwarding of camera stereo " << frameLeft->time << " " << frameRight->time << " " << onlyFrameRequested;
 
                 }
                 _frame_right_out.write(frameRight);
@@ -284,7 +284,7 @@ void Task::forwardToPorts()
         }
         default:
         {
-            //TODO error
+            LOG_ERROR_S << "Should not reach this line: " << __LINE__;
             break;
         }
     }

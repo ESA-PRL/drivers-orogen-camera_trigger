@@ -4,7 +4,7 @@ include(camera_triggerTaskLib)
 ADD_LIBRARY(${CAMERA_TRIGGER_TASKLIB_NAME} SHARED 
     ${CAMERA_TRIGGER_TASKLIB_SOURCES})
 add_dependencies(${CAMERA_TRIGGER_TASKLIB_NAME}
-    regen-typekit)
+    regen-typekit base-lib)
 
 TARGET_LINK_LIBRARIES(${CAMERA_TRIGGER_TASKLIB_NAME}
     ${OrocosRTT_LIBRARIES}
