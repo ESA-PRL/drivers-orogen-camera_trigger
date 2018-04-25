@@ -215,6 +215,9 @@ void Task::forwardToPorts()
     }
     LOG_DEBUG_S << "Went through forward to ports if";
 
+    // take time to disregard old images (e.g. for panoramas)
+    base::Time time_of_request = base::Time::now();
+
     switch (sensor)
     {
         case CAMERA:
@@ -223,14 +226,14 @@ void Task::forwardToPorts()
             // check if only frame will be sent
             if(onlyFrameRequested)
             {
-                while (_frame_left_in.read(frameLeft) != RTT::NewData);
+                while (_frame_left_in.read(frameLeft) != RTT::NewData || frameLeft->time < time_of_request);
                 _frame_left_out.write(frameLeft);
                 LOG_DEBUG_S << "Went through forwarding of camera single " << frameLeft->time << " " <<  onlyFrameRequested;
 
             }
             else
             {
-                while (_frame_left_in.read(frameLeft) != RTT::NewData);
+                while (_frame_left_in.read(frameLeft) != RTT::NewData || frameLeft->time < time_of_request);
                 while (_frame_right_in.read(frameRight) != RTT::NewData);
                 while(!validPair)
                 {
@@ -258,7 +261,7 @@ void Task::forwardToPorts()
         }
         case LIDAR:
         {
-            while (_frame_left_in.read(frame) != RTT::NewData);
+            while (_frame_left_in.read(frame) != RTT::NewData || frame->time < time_of_request);
             _frame_left_out.write(frame);
 
             //while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
@@ -271,7 +274,7 @@ void Task::forwardToPorts()
         }
         case TOF:
         {
-            while (_frame_left_in.read(frame) != RTT::NewData);
+            while (_frame_left_in.read(frame) != RTT::NewData || frame->time < time_of_request);
             _frame_left_out.write(frame);
 
             //while (_distance_frame_in.read(distanceFrame) != RTT::NewData);
